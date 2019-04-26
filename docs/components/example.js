@@ -86,7 +86,7 @@ ${html}
                             </div>
 
                             {supported() &&
-                                <iframe id='demo' style={{ height: 400 }} className='w-full' allowFullScreen={true} referrerPolicy="origin" mozallowfullscreen='true' webkitallowfullscreen='true'
+                                <iframe id='demo' style={{ height: 400 }} className='w-full' allowFullScreen={true}  mozallowfullscreen='true' webkitallowfullscreen='true'
                                     ref={(iframe) => { this.iframe = iframe; }}/>}
 
                             <div className='bg-white'>
@@ -110,6 +110,7 @@ ${html}
             const doc = this.iframe.contentWindow.document;
             doc.open();
             doc.write(this.renderHTML());
+            doc.referrerPolicy = "origin";
             doc.close();
 
             MapboxPageShell.afterUserCheck(() => {
