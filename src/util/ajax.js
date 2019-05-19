@@ -5,6 +5,7 @@ import { extend } from './util';
 import { isMapboxHTTPURL } from './mapbox';
 import config from './config';
 import assert from 'assert';
+import webpSupported from './webp_supported';
 
 import type { Callback } from '../types/callback';
 import type { Cancelable } from '../types/cancelable';
@@ -208,6 +209,13 @@ export const resetImageRequestQueue = () => {
 resetImageRequestQueue();
 
 export const getImage = function(requestParameters: RequestParameters, callback: Callback<HTMLImageElement>): Cancelable {
+    if (webpSupported.supported) {
+        if (!requestParameters.headers) {
+            requestParameters.headers = {};
+        }
+        requestParameters.headers.accept = 'image/webp,*/*';
+    }
+
     // limit concurrent image loads to help with raster sources performance on big screens
     if (numImageRequests >= config.MAX_PARALLEL_IMAGE_REQUESTS) {
         const queued = {
