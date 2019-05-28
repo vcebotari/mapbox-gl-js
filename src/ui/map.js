@@ -78,6 +78,7 @@ type MapOptions = {
     scrollZoom?: boolean,
     minZoom?: ?number,
     maxZoom?: ?number,
+    maxPitch?: ?number,
     boxZoom?: boolean,
     dragRotate?: boolean,
     dragPan?: boolean,
@@ -96,6 +97,7 @@ type MapOptions = {
 
 const defaultMinZoom = 0;
 const defaultMaxZoom = 22;
+const defaultMaxPitch = 60;
 const defaultOptions = {
     center: [0, 0],
     zoom: 0,
@@ -104,6 +106,7 @@ const defaultOptions = {
 
     minZoom: defaultMinZoom,
     maxZoom: defaultMaxZoom,
+    maxPitch: defaultMaxPitch,
 
     interactive: true,
     scrollZoom: true,
@@ -146,6 +149,7 @@ const defaultOptions = {
  * @param {HTMLElement|string} options.container The HTML element in which Mapbox GL JS will render the map, or the element's string `id`. The specified element must have no children.
  * @param {number} [options.minZoom=0] The minimum zoom level of the map (0-24).
  * @param {number} [options.maxZoom=22] The maximum zoom level of the map (0-24).
+ * @param {number} [options.maxPitch=60] The maximum pitch level of the map (0-70). default: 60.
  * @param {Object|string} [options.style] The map's Mapbox style. This must be an a JSON object conforming to
  * the schema described in the [Mapbox Style Specification](https://mapbox.com/mapbox-gl-style-spec/), or a URL to
  * such JSON.
@@ -196,7 +200,7 @@ const defaultOptions = {
  * @param {LngLatLike} [options.center=[0, 0]] The inital geographical centerpoint of the map. If `center` is not specified in the constructor options, Mapbox GL JS will look for it in the map's style object. If it is not specified in the style, either, it will default to `[0, 0]` Note: Mapbox GL uses longitude, latitude coordinate order (as opposed to latitude, longitude) to match GeoJSON.
  * @param {number} [options.zoom=0] The initial zoom level of the map. If `zoom` is not specified in the constructor options, Mapbox GL JS will look for it in the map's style object. If it is not specified in the style, either, it will default to `0`.
  * @param {number} [options.bearing=0] The initial bearing (rotation) of the map, measured in degrees counter-clockwise from north. If `bearing` is not specified in the constructor options, Mapbox GL JS will look for it in the map's style object. If it is not specified in the style, either, it will default to `0`.
- * @param {number} [options.pitch=0] The initial pitch (tilt) of the map, measured in degrees away from the plane of the screen (0-60). If `pitch` is not specified in the constructor options, Mapbox GL JS will look for it in the map's style object. If it is not specified in the style, either, it will default to `0`.
+ * @param {number} [options.pitch=0] The initial pitch (tilt) of the map, measured in degrees away from the plane of the screen (0-70). If `pitch` is not specified in the constructor options, Mapbox GL JS will look for it in the map's style object. If it is not specified in the style, either, it will default to `0`.
  * @param {LngLatBoundsLike} [options.bounds] The initial bounds of the map. If `bounds` is specified, it overrides `center` and `zoom` constructor options.
  * @param {Object} [options.fitBoundsOptions] A [`fitBounds`](#map#fitbounds) options object to use _only_ when fitting the initial `bounds` provided above.
  * @param {boolean} [options.renderWorldCopies=true]  If `true`, multiple copies of the world will be rendered, when zoomed out.
@@ -312,8 +316,11 @@ class Map extends Camera {
         if (options.minZoom != null && options.maxZoom != null && options.minZoom > options.maxZoom) {
             throw new Error(`maxZoom must be greater than minZoom`);
         }
+        if (options.maxPitch < 0 || options.maxPitch > 70) {
+            throw new Error(`maxPitch must be in range [0-70]`);
+        }
 
-        const transform = new Transform(options.minZoom, options.maxZoom, options.renderWorldCopies);
+        const transform = new Transform(options.minZoom, options.maxZoom, options.maxPitch, options.renderWorldCopies);
         super(transform, options);
 
         this._interactive = options.interactive;
@@ -586,6 +593,29 @@ class Map extends Camera {
     }
 
     /**
+     * Sets or clears the map's maximum pitch value.
+     * If the map's current pitch value is higher than the new maximum,
+     * the map will pitch to the new maximum.
+     *
+     * @param {number | null | undefined} maxPitch The maximum pitch value to set.
+     *   If `null` or `undefined` is provided, the function removes the current maximum pitch (sets it to 60).
+     * @returns {Map} `this`
+     */
+    setMaxPitch(maxPitch?: ?number) {
+        maxPitch = maxPitch === null || maxPitch === undefined ? defaultMaxPitch : maxPitch;
+
+        if (maxPitch >= 0 || maxPitch <= 70) {
+            this.transform.maxPitch = maxPitch;
+            this._update();
+
+            if (this.getPitch() > maxPitch) this.setPitch(maxPitch);
+
+            return this;
+
+        } else throw new Error(`maxPitch must be in range [0-70]`);
+    }
+
+    /**
      * Returns the state of renderWorldCopies.
      *
      * @returns {boolean} renderWorldCopies
@@ -609,6 +639,13 @@ class Map extends Camera {
      * @returns {number} maxZoom
      */
     getMaxZoom() { return this.transform.maxZoom; }
+
+    /**
+     * Returns the map's maximum allowable pitch value.
+     *
+     * @returns {number} maxPitch
+     */
+    getMaxPitch() { return this.transform.maxPitch; }
 
     /**
      * Returns a {@link Point} representing pixel coordinates, relative to the map's `container`,

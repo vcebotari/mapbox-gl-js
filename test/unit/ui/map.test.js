@@ -731,6 +731,30 @@ test('Map', (t) => {
         t.end();
     });
 
+    t.test('#setMaxPitch', (t) => {
+        const map = createMap(t, {pitch:0});
+        map.setMaxPitch(3.5);
+        map.setPitch(4);
+        t.equal(map.getPitch(), 3.5);
+        t.end();
+    });
+
+    t.test('unset maxPitch', (t) => {
+        const map = createMap(t, {maxPitch:5});
+        map.setMaxPitch(null);
+        map.setPitch(6);
+        t.equal(map.getPitch(), 6);
+        t.end();
+    });
+
+    t.test('#getMaxPitch', (t) => {
+        const map = createMap(t, {pitch: 0});
+        t.equal(map.getMaxPitch(), 60, 'returns default value');
+        map.setMaxPitch(10);
+        t.equal(map.getMaxPitch(), 10, 'returns custom value');
+        t.end();
+    });
+
     t.test('#setMinZoom', (t) => {
         const map = createMap(t, {zoom:5});
         map.setMinZoom(3.5);
